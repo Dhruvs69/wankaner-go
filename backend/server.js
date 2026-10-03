@@ -3,11 +3,28 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const { initializeApp, cert } = require('firebase-admin/app');
-const serviceAccount = require('./firebase-service-account.json');
+require('dotenv').config();
 
-initializeApp({
-  credential: cert(serviceAccount)
-});
+let credentialParams;
+if (process.env.FIREBASE_PRIVATE_KEY) {
+  credentialParams = {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  };
+} else {
+  try {
+    credentialParams = require('./firebase-service-account.json');
+  } catch (e) {
+    console.error("No Firebase credentials found. Push notifications will fail.");
+  }
+}
+
+if (credentialParams) {
+  initializeApp({
+    credential: cert(credentialParams)
+  });
+}
 
 require('dotenv').config();
 

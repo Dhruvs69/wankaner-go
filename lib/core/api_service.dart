@@ -5,10 +5,7 @@ import 'package:flutter/foundation.dart';
 
 class ApiService {
   static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:3000/api';
-    // Use the machine's local network IP so physical Android devices on Wi-Fi can connect.
-    // If you are using an Android Emulator, 10.0.2.2 works, but the local IP covers both.
-    return 'http://10.205.76.116:3000/api';
+    return 'https://wankaner-go.onrender.com/api';
   }
 
   static Future<Map<String, String>> _getHeaders() async {
@@ -25,7 +22,7 @@ class ApiService {
 
   static Future<http.Response> get(String endpoint) async {
     final headers = await _getHeaders();
-    return http.get(Uri.parse('$baseUrl$endpoint'), headers: headers).timeout(const Duration(seconds: 5));
+    return http.get(Uri.parse('$baseUrl$endpoint'), headers: headers).timeout(const Duration(seconds: 60));
   }
 
   static Future<http.Response> post(String endpoint, Map<String, dynamic> body) async {
@@ -34,7 +31,7 @@ class ApiService {
       Uri.parse('$baseUrl$endpoint'),
       headers: headers,
       body: jsonEncode(body),
-    ).timeout(const Duration(seconds: 5));
+    ).timeout(const Duration(seconds: 60));
   }
 
   static Future<http.Response> put(String endpoint, Map<String, dynamic> body) async {
@@ -43,12 +40,12 @@ class ApiService {
       Uri.parse('$baseUrl$endpoint'),
       headers: headers,
       body: jsonEncode(body),
-    ).timeout(const Duration(seconds: 5));
+    ).timeout(const Duration(seconds: 60));
   }
 
   static Future<http.Response> delete(String endpoint) async {
     final headers = await _getHeaders();
-    return http.delete(Uri.parse('$baseUrl$endpoint'), headers: headers).timeout(const Duration(seconds: 5));
+    return http.delete(Uri.parse('$baseUrl$endpoint'), headers: headers).timeout(const Duration(seconds: 60));
   }
 
   static Future<String?> uploadImage(List<int> bytes, String filename) async {
