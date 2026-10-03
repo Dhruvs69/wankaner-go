@@ -1,0 +1,34 @@
+[
+  {
+    "id": "1",
+    "title": "Cravings\nSorted!",
+    "subtitle": "Up to 50% OFF",
+    "emoji": "🍔",
+    "color1": "#FFFF9A9E",
+    "color2": "#FFFECFEF"
+  },
+  {
+    "id": "2",
+    "title": "Fresh Grocery\nDelivered!",
+    "subtitle": "Free Delivery",
+    "emoji": "🥦",
+    "color1": "#FFA18CD1",
+    "color2": "#FFFBC2EB"
+  },
+  {
+    "id": "f3d28e00-b912-40f7-890e-f65ee43282d8",
+    "title": "It's Raining Now..",
+    "subtitle": "Order Hot Pakodas Now...",
+    "emoji": "🔥",
+    "color1": "#FFF4575D",
+    "color2": "#FFB5FA8E"
+  },
+  {
+    "id": "2c656da5-abd8-4d5a-9be4-fb18c19742e3",
+    "title": "10% Off",
+    "subtitle": "On Margareta Pizza ",
+    "emoji": "🍕",
+    "color1": "#FFC49AFF",
+    "color2": "#FFCFFEFE"
+  }
+]

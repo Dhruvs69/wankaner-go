@@ -1,0 +1,6 @@
+const fs = require('fs');
+let text = fs.readFileSync('lib/features/auth/screens/vendor_home_screen.dart', 'utf-8');
+
+text = text.replace(/\\\$/g, '$');
+
+fs.writeFileSync('lib/features/auth/screens/vendor_home_screen.dart', text, 'utf-8');

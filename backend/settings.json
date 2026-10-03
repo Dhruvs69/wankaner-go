@@ -1,0 +1,8 @@
+{
+  "baseDeliveryFee": "20",
+  "platformCommission": "10",
+  "minimumOrderValue": "99",
+  "maintenanceMode": false,
+  "autoAssignPartners": true,
+  "surgePricing": false
+}

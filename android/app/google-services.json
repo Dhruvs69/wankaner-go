@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "97136798155",
+    "project_id": "wankaner-go",
+    "storage_bucket": "wankaner-go.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:97136798155:android:009bb7ac46449823526e4e",
+        "android_client_info": {
+          "package_name": "com.example.wankaner_go"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3LYsdqiuOf5pquoSDM2psCLEJi3a6I_8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

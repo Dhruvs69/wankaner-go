@@ -1,0 +1,808 @@
+Created At: 2026-09-28T16:17:31+05:30
+Completed At: 2026-09-28T16:17:31+05:30
+File Path: `file:///D:/speedtrack/wankaner_go/lib/features/auth/screens/vendor_home_screen.dart`
+Total Lines: 1790
+Total Bytes: 73337
+Showing lines 1 to 800
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: // ignore_for_file: deprecated_member_use
+2: import 'package:flutter/material.dart';
+3: import 'package:flutter_riverpod/flutter_riverpod.dart';
+4: import '../../customer/repositories/order_repository.dart';
+5: import '../../customer/repositories/item_repository.dart';
+6: import '../repositories/auth_repository.dart';
+7: import '../providers/auth_provider.dart';
+8: import '../../../core/api_service.dart';
+9: import '../../customer/providers/vendor_provider.dart';
+10: import '../../customer/models/vendor_model.dart';
+11: import '../../customer/models/item_model.dart';
+12: import 'package:image_picker/image_picker.dart';
+13: import 'package:url_launcher/url_launcher.dart';
+14: import '../../../core/widgets/notification_bell.dart';
+15: 
+16: final vendorPrepTimeProvider =
+17:     StateProvider.family<int, String>((ref, vendorId) => 15);
+18: final vendorBusinessHoursProvider = StateProvider.family<String, String>(
+19:     (ref, vendorId) => 'Auto-Offline at 11:00 PM');
+20: 
+21: class VendorHomeScreen extends ConsumerStatefulWidget {
+22:   const VendorHomeScreen({super.key});
+23: 
+24:   @override
+25:   ConsumerState<VendorHomeScreen> createState() => _VendorHomeScreenState();
+26: }
+27: 
+28: class _VendorHomeScreenState extends ConsumerState<VendorHomeScreen> {
+29:   int _currentIndex = 0;
+30:   String? _cachedVendorId;
+31:   String? _selectedShopId;
+32: 
+33:   String get myUserId {
+34:     if (_cachedVendorId != null) return _cachedVendorId!;
+35:     return ref.watch(authStateProvider).value ?? '';
+36:   }
+37: 
+38:   @override
+39:   void didChangeDependencies() {
+40:     super.didChangeDependencies();
+41:     _cachedVendorId = ref.watch(authStateProvider).value;
+42:   }
+43: 
+44:   final Map<String, String> _optimisticStatus = {};
+45: 
+46:   @override
+47:   Widget build(BuildContext context) {
+48:     final shopsAsync = ref.watch(myOwnedShopsProvider(myUserId));
+49: 
+50:     return Scaffold(
+51:       backgroundColor: Colors.grey.shade50,
+52:       appBar: AppBar(
+53:         title: shopsAsync.maybeWhen(
+54:           data: (shops) {
+55:             if (shops.isEmpty) {
+56:               return const Text('Vendor Dashboard',
+57:                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold));
+58:             }
+59: 
+60:             if (_selectedShopId == null ||
+61:                 !shops.any((s) => s.id == _selectedShopId)) {
+62:               WidgetsBinding.instance.addPostFrameCallback((_) {
+63:                 setState(() => _selectedShopId = shops.first.id);
+64:               });
+65:               return const Text('Vendor Dashboard');
+66:             }
+67: 
+68:             return DropdownButtonHideUnderline(
+69:               child: DropdownButton<String>(
+70:                 value: _selectedShopId,
+71:                 dropdownColor: Colors.deepOrange,
+72:                 icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+73:                 style: const TextStyle(
+74:                     color: Colors.white,
+75:                     fontSize: 18,
+76:                     fontWeight: FontWeight.bold),
+77:                 onChanged: (String? newValue) {
+78:                   if (newValue != null) {
+79:                     setState(() => _selectedShopId = newValue);
+80:                   }
+81:                 },
+82:                 items: shops.map<DropdownMenuItem<String>>((Vendor shop) {
+83:                   return DropdownMenuItem<String>(
+84:                     value: shop.id,
+85:                     child: Text(shop.name),
+86:                   );
+87:                 }).toList(),
+88:               ),
+89:             );
+90:           },
+91:           orElse: () => const Text('Vendor Dashboard',
+92:               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+93:         ),
+94:         backgroundColor: Colors.deepOrange,
+95:         foregroundColor: Colors.white,
+96:         elevation: 0,
+97:         actions: [
+98:           const NotificationBell(),
+99:           IconButton(
+100:             icon: const Icon(Icons.logout),
+101:             onPressed: () async {
+102:               await ref.read(authRepositoryProvider).signOut();
+103:             },
+104:           ),
+105:         ],
+106:       ),
+107:       body: shopsAsync.when(
+108:         data: (shops) {
+109:           if (shops.isEmpty) {
+110:             return _buildEmptyState(Icons.storefront, 'No Shops Assigned',
+111:                 'You have no shops assigned to you yet.\nPlease contact the Admin.');
+112:           }
+113:           if (_selectedShopId == null) {
+114:             return const Center(
+115:                 child: CircularProgressIndicator(color: Colors.deepOrange));
+116:           }
+117: 
+118:           final ordersAsync = ref.watch(vendorOrdersProvider(_selectedShopId!));
+119: 
+120:           return ordersAsync.when(
+121:             data: (orders) {
+122:               final activeOrders = orders.where((o) {
+123:                 final status = _optimisticStatus[o.id] ?? o.status;
+124:                 return status != 'delivered' && status != 'cancelled';
+125:               }).toList();
+126:               final completedOrders = orders.where((o) {
+127:                 final status = _optimisticStatus[o.id] ?? o.status;
+128:                 return status == 'delivered';
+129:               }).toList();
+130: 
+131:               Widget content;
+132:               switch (_currentIndex) {
+133:                 case 0:
+134:                   content = _buildLiveOrders(activeOrders);
+135:                   break;
+136:                 case 1:
+137:                   content = _buildMenuManagement();
+138:                   break;
+139:                 case 2:
+140:                   content = _buildEarnings(completedOrders);
+141:                   break;
+142:                 default:
+143:                   content = const Center(child: Text('Page not found'));
+144:               }
+145: 
+146:               return RefreshIndicator(
+147:                 color: Colors.deepOrange,
+148:                 onRefresh: () async {
+149:                   ref.invalidate(vendorOrdersProvider(_selectedShopId!));
+150:                   ref.invalidate(vendorItemsProvider(_selectedShopId!));
+151:                 },
+152:                 child: content,
+153:               );
+154:             },
+155:             loading: () => const Center(
+156:                 child: CircularProgressIndicator(color: Colors.deepOrange)),
+157:             error: (e, s) => Center(child: Text('Error: $e')),
+158:           );
+159:         },
+160:         loading: () => const Center(
+161:             child: CircularProgressIndicator(color: Colors.deepOrange)),
+162:         error: (e, s) => Center(child: Text('Error loading shops: $e')),
+163:       ),
+164:       bottomNavigationBar: Container(
+165:         decoration: BoxDecoration(
+166:           boxShadow: [
+167:             BoxShadow(
+168:                 color: Colors.black.withValues(alpha: 0.1),
+169:                 blurRadius: 10,
+170:                 offset: const Offset(0, -5))
+171:           ],
+172:         ),
+173:         child: BottomNavigationBar(
+174:           currentIndex: _currentIndex,
+175:           selectedItemColor: Colors.deepOrange,
+176:           unselectedItemColor: Colors.grey,
+177:           backgroundColor: Colors.white,
+178:           elevation: 0,
+179:           onTap: (index) => setState(() => _currentIndex = index),
+180:           items: const [
+181:             BottomNavigationBarItem(
+182:                 icon: Icon(Icons.receipt_long), label: 'Live Orders'),
+183:             BottomNavigationBarItem(
+184:                 icon: Icon(Icons.restaurant_menu), label: 'Menu'),
+185:             BottomNavigationBarItem(
+186:                 icon: Icon(Icons.account_balance_wallet), label: 'Earnings'),
+187:           ],
+188:         ),
+189:       ),
+190:     );
+191:   }
+192: 
+193:   Widget _buildEmptyState(IconData icon, String title, String subtitle) {
+194:     return Center(
+195:       child: Column(
+196:         mainAxisAlignment: MainAxisAlignment.center,
+197:         children: [
+198:           Icon(icon, size: 80, color: Colors.grey.shade300),
+199:           const SizedBox(height: 16),
+200:           Text(title,
+201:               style: TextStyle(
+202:                   fontSize: 20,
+203:                   fontWeight: FontWeight.bold,
+204:                   color: Colors.grey.shade800)),
+205:           const SizedBox(height: 8),
+206:           Text(subtitle,
+207:               textAlign: TextAlign.center,
+208:               style: TextStyle(color: Colors.grey.shade600, height: 1.5)),
+209:         ],
+210:       ),
+211:     );
+212:   }
+213: 
+214:   Widget _buildLiveOrders(List orders) {
+215:     if (orders.isEmpty) {
+216:       return _buildEmptyState(Icons.receipt_long, 'No Active Orders',
+217:           'Wait for new orders to come in.');
+218:     }
+219: 
+220:     return ListView.builder(
+221:       padding: const EdgeInsets.all(16),
+222:       itemCount: orders.length,
+223:       itemBuilder: (context, index) {
+224:         final order = orders[index];
+225:         final currentStatus = _optimisticStatus[order.id] ?? order.status;
+226: 
+227:         // Calculate time elapsed
+228:         final diff = DateTime.now().difference(order.createdAt);
+229:         String timeStr = '${diff.inMinutes}m ago';
+230:         if (diff.inMinutes > 60) timeStr = '${diff.inHours}h ago';
+231: 
+232:         return Card(
+233:           margin: const EdgeInsets.only(bottom: 16),
+234:           elevation: 4,
+235:           shadowColor: Colors.deepOrange.withValues(alpha: 0.1),
+236:           shape:
+237:               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+238:           child: Padding(
+239:             padding: const EdgeInsets.all(16.0),
+240:             child: Column(
+241:               crossAxisAlignment: CrossAxisAlignment.start,
+242:               children: [
+243:                 Row(
+244:                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+245:                   children: [
+246:                     Column(
+247:                       crossAxisAlignment: CrossAxisAlignment.start,
+248:                       children: [
+249:                         Text(
+250:                             'Order #${order.id.length > 8 ? order.id.substring(0, 8) : order.id}',
+251:                             style: const TextStyle(
+252:                                 fontWeight: FontWeight.bold, fontSize: 16)),
+253:                         const SizedBox(height: 4),
+254:                         Row(
+255:                           children: [
+256:                             const Icon(Icons.access_time,
+257:                                 size: 14, color: Colors.grey),
+258:                             const SizedBox(width: 4),
+259:                             Text(timeStr,
+260:                                 style: const TextStyle(
+261:                                     color: Colors.grey, fontSize: 12)),
+262:                           ],
+263:                         ),
+264:                       ],
+265:                     ),
+266:                     _StatusBadge(status: currentStatus),
+267:                   ],
+268:                 ),
+269:                 const Divider(height: 24),
+270: 
+271:                 // Customer Info
+272:                 Row(
+273:                   children: [
+274:                     CircleAvatar(
+275:                       backgroundColor: Colors.deepOrange.shade100,
+276:                       foregroundColor: Colors.deepOrange,
+277:                       radius: 16,
+278:                       child: const Icon(Icons.person, size: 18),
+279:                     ),
+280:                     const SizedBox(width: 12),
+281:                     Expanded(
+282:                       child: Column(
+283:                         crossAxisAlignment: CrossAxisAlignment.start,
+284:                         children: [
+285:                           Text(
+286:                               order.customerName.isNotEmpty
+287:                                   ? '${order.customerName} (${order.customerId})'
+288:                                   : 'Customer (${order.customerId})',
+289:                               style:
+290:                                   const TextStyle(fontWeight: FontWeight.bold)),
+291:                         ],
+292:                       ),
+293:                     ),
+294:                     if (order.customerPhone.isNotEmpty)
+295:                       IconButton(
+296:                         icon: const Icon(Icons.phone, color: Colors.green),
+297:                         onPressed: () async {
+298:                           final Uri phoneUri =
+299:                               Uri(scheme: 'tel', path: order.customerPhone);
+300:                           if (await canLaunchUrl(phoneUri)) {
+301:                             await launchUrl(phoneUri);
+302:                           }
+303:                         },
+304:                       ),
+305:                   ],
+306:                 ),
+307:                 const SizedBox(height: 12),
+308: 
+309:                 Container(
+310:                   padding: const EdgeInsets.all(12),
+311:                   decoration: BoxDecoration(
+312:                       color: Colors.grey.shade50,
+313:                       borderRadius: BorderRadius.circular(12),
+314:                       border: Border.all(color: Colors.grey.shade200)),
+315:                   child: Column(
+316:                     crossAxisAlignment: CrossAxisAlignment.start,
+317:                     children: order.items.map<Widget>((item) {
+318:                       final mapItem = item as dynamic;
+319:                       return Padding(
+320:                         padding: const EdgeInsets.only(bottom: 8),
+321:                         child: Row(
+322:                           children: [
+323:                             Container(
+324:                               padding: const EdgeInsets.symmetric(
+325:                                   horizontal: 8, vertical: 2),
+326:                               decoration: BoxDecoration(
+327:                                   color: Colors.deepOrange.shade50,
+328:                                   borderRadius: BorderRadius.circular(4)),
+329:                               child: Text('${mapItem['quantity']}x',
+330:                                   style: const TextStyle(
+331:                                       fontWeight: FontWeight.bold,
+332:                                       color: Colors.deepOrange)),
+333:                             ),
+334:                             const SizedBox(width: 12),
+335:                             Expanded(
+336:                                 child: Text('${mapItem['name']}',
+337:                                     style: const TextStyle(
+338:                                         fontWeight: FontWeight.w500))),
+339:                             Text('₹${mapItem['price'] * mapItem['quantity']}',
+340:                                 style: const TextStyle(
+341:                                     fontWeight: FontWeight.bold)),
+342:                           ],
+343:                         ),
+344:                       );
+345:                     }).toList(),
+346:                   ),
+347:                 ),
+348:                 const SizedBox(height: 16),
+349:                 Row(
+350:                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+351:                   children: [
+352:                     const Text('Total Bill:',
+353:                         style: TextStyle(
+354:                             fontWeight: FontWeight.bold,
+355:                             color: Colors.grey,
+356:                             fontSize: 16)),
+357:                     Text('₹${order.totalAmount.toStringAsFixed(2)}',
+358:                         style: const TextStyle(
+359:                             fontWeight: FontWeight.bold,
+360:                             fontSize: 20,
+361:                             color: Colors.green)),
+362:                   ],
+363:                 ),
+364:                 const SizedBox(height: 16),
+365: 
+366:                 // Action Buttons
+367:                 if (currentStatus == 'pending' || currentStatus == '')
+368:                   Row(
+369:                     children: [
+370:                       Expanded(
+371:                         child: OutlinedButton(
+372:                           style: OutlinedButton.styleFrom(
+373:                               foregroundColor: Colors.red,
+374:                               side: const BorderSide(color: Colors.red),
+375:                               padding: const EdgeInsets.symmetric(vertical: 14),
+376:                               shape: RoundedRectangleBorder(
+377:                                   borderRadius: BorderRadius.circular(12))),
+378:                           onPressed: () async {
+379:                             setState(() =>
+380:                                 _optimisticStatus[order.id] = 'cancelled');
+381:                             try {
+382:                               await ref
+383:                                   .read(orderRepositoryProvider)
+384:                                   .updateOrderStatus(order.id, 'cancelled');
+385:                               ref.invalidate(
+386:                                   vendorOrdersProvider(_selectedShopId!));
+387:                             } catch (e) {
+388:                               setState(
+389:                                   () => _optimisticStatus.remove(order.id));
+390:                               if (context.mounted) {
+391:                                 ScaffoldMessenger.of(context).showSnackBar(
+392:                                     SnackBar(content: Text('Failed: $e')));
+393:                               }
+394:                             }
+395:                           },
+396:                           child: const Text('Reject',
+397:                               style: TextStyle(fontWeight: FontWeight.bold)),
+398:                         ),
+399:                       ),
+400:                       const SizedBox(width: 16),
+401:                       Expanded(
+402:                         child: ElevatedButton(
+403:                           style: ElevatedButton.styleFrom(
+404:                               backgroundColor: Colors.blue.shade600,
+405:                               foregroundColor: Colors.white,
+406:                               padding: const EdgeInsets.symmetric(vertical: 14),
+407:                               shape: RoundedRectangleBorder(
+408:                                   borderRadius: BorderRadius.circular(12))),
+409:                           onPressed: () async {
+410:                             setState(() =>
+411:                                 _optimisticStatus[order.id] = 'processing');
+412:                             try {
+413:                               await ref
+414:                                   .read(orderRepositoryProvider)
+415:                                   .updateOrderStatus(order.id, 'processing');
+416:                               ref.invalidate(
+417:                                   vendorOrdersProvider(_selectedShopId!));
+418:                             } catch (e) {
+419:                               setState(
+420:                                   () => _optimisticStatus.remove(order.id));
+421:                               if (context.mounted) {
+422:                                 ScaffoldMessenger.of(context).showSnackBar(
+423:                                     SnackBar(content: Text('Failed: $e')));
+424:                               }
+425:                             }
+426:                           },
+427:                           child: const Text('Accept',
+428:                               style: TextStyle(fontWeight: FontWeight.bold)),
+429:                         ),
+430:                       ),
+431:                     ],
+432:                   ),
+433:                 if (currentStatus == 'processing')
+434:                   Row(
+435:                     children: [
+436:                       Expanded(
+437:                         child: OutlinedButton(
+438:                           style: OutlinedButton.styleFrom(
+439:                               foregroundColor: Colors.orange,
+440:                               side: BorderSide(color: Colors.orange.shade300),
+441:                               padding: const EdgeInsets.symmetric(vertical: 16),
+442:                               shape: RoundedRectangleBorder(
+443:                                   borderRadius: BorderRadius.circular(12))),
+444:                           onPressed: () {
+445:                             ScaffoldMessenger.of(context).showSnackBar(
+446:                                 const SnackBar(
+447:                                     content: Text(
+448:                                         '+15 mins added to Prep Time. Customer notified.')));
+449:                           },
+450:                           child: const Text('Delay +15m',
+451:                               style: TextStyle(fontWeight: FontWeight.bold)),
+452:                         ),
+453:                       ),
+454:                       const SizedBox(width: 12),
+455:                       Expanded(
+456:                         flex: 2,
+457:                         child: ElevatedButton(
+458:                           style: ElevatedButton.styleFrom(
+459:                               backgroundColor: Colors.orange.shade600,
+460:                               foregroundColor: Colors.white,
+461:                               padding: const EdgeInsets.symmetric(vertical: 16),
+462:                               shape: RoundedRectangleBorder(
+463:                                   borderRadius: BorderRadius.circular(12))),
+464:                           onPressed: () async {
+465:                             setState(
+466:                                 () => _optimisticStatus[order.id] = 'ready');
+467:                             try {
+468:                               await ref
+469:                                   .read(orderRepositoryProvider)
+470:                                   .updateOrderStatus(order.id, 'ready');
+471:                               ref.invalidate(
+472:                                   vendorOrdersProvider(_selectedShopId!));
+473:                             } catch (e) {
+474:                               setState(
+475:                                   () => _optimisticStatus.remove(order.id));
+476:                               if (context.mounted) {
+477:                                 ScaffoldMessenger.of(context).showSnackBar(
+478:                                     SnackBar(content: Text('Failed: $e')));
+479:                               }
+480:                             }
+481:                           },
+482:                           child: const Text('FOOD READY',
+483:                               style: TextStyle(
+484:                                   fontWeight: FontWeight.bold,
+485:                                   fontSize: 16,
+486:                                   letterSpacing: 1)),
+487:                         ),
+488:                       ),
+489:                     ],
+490:                   ),
+491:                 if (currentStatus == 'ready' ||
+492:                     currentStatus == 'out for delivery' ||
+493:                     currentStatus == 'picked up')
+494:                   Container(
+495:                     width: double.infinity,
+496:                     padding: const EdgeInsets.symmetric(vertical: 16),
+497:                     decoration: BoxDecoration(
+498:                         color: Colors.green.shade50,
+499:                         borderRadius: BorderRadius.circular(12),
+500:                         border: Border.all(color: Colors.green.shade200)),
+501:                     child: Center(
+502:                       child: Text(
+503:                           currentStatus == 'picked up'
+504:                               ? 'Order Picked Up by Driver'
+505:                               : 'Waiting for Delivery Partner...',
+506:                           style: const TextStyle(
+507:                               color: Colors.green,
+508:                               fontWeight: FontWeight.bold)),
+509:                     ),
+510:                   ),
+511:               ],
+512:             ),
+513:           ),
+514:         );
+515:       },
+516:     );
+517:   }
+518: 
+519:   Widget _buildMenuManagement() {
+520:     final itemsAsync = ref.watch(vendorItemsProvider(_selectedShopId!));
+521:     final prepTime = ref.watch(vendorPrepTimeProvider(_selectedShopId!));
+522:     final businessHours =
+523:         ref.watch(vendorBusinessHoursProvider(_selectedShopId!));
+524: 
+525:     return Scaffold(
+526:       backgroundColor: Colors.transparent,
+527:       floatingActionButton: FloatingActionButton.extended(
+528:         backgroundColor: Colors.deepOrange,
+529:         icon: const Icon(Icons.add, color: Colors.white),
+530:         label: const Text('Add Item',
+531:             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+532:         onPressed: () {
+533:           _showAddItemDialog(context);
+534:         },
+535:       ),
+536:       body: CustomScrollView(
+537:         slivers: [
+538:           SliverToBoxAdapter(
+539:             child: Padding(
+540:               padding: const EdgeInsets.all(16.0),
+541:               child: Column(
+542:                 crossAxisAlignment: CrossAxisAlignment.start,
+543:                 children: [
+544:                   const Text('Store Settings',
+545:                       style:
+546:                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+547:                   const SizedBox(height: 12),
+548:                   Card(
+549:                     elevation: 0,
+550:                     color: Colors.white,
+551:                     shape: RoundedRectangleBorder(
+552:                         borderRadius: BorderRadius.circular(12),
+553:                         side: BorderSide(color: Colors.grey.shade200)),
+554:                     child: Column(
+555:                       children: [
+556:                         ListTile(
+557:                           leading:
+558:                               const Icon(Icons.access_time, color: Colors.blue),
+559:                           title: const Text('Business Hours',
+560:                               style: TextStyle(fontWeight: FontWeight.bold)),
+561:                           subtitle: Text(businessHours),
+562:                           trailing: ElevatedButton(
+563:                             onPressed: () {
+564:                               _showBusinessHoursDialog(context, businessHours);
+565:                             },
+566:                             child: const Text('Edit'),
+567:                           ),
+568:                         ),
+569:                         const Divider(height: 1),
+570:                         ListTile(
+571:                           leading:
+572:                               const Icon(Icons.timer, color: Colors.orange),
+573:                           title: const Text('Preparation Time',
+574:                               style: TextStyle(fontWeight: FontWeight.bold)),
+575:                           subtitle: Text('Currently: $prepTime mins'),
+576:                           trailing: DropdownButton<int>(
+577:                             value: prepTime,
+578:                             items: [15, 30, 45, 60, 90, 120]
+579:                                 .map((e) => DropdownMenuItem(
+580:                                     value: e, child: Text('$e mins')))
+581:                                 .toList(),
+582:                             onChanged: (val) {
+583:                               if (val != null) {
+584:                                 ref
+585:                                     .read(
+586:                                         vendorPrepTimeProvider(_selectedShopId!)
+587:                                             .notifier)
+588:                                     .state = val;
+589:                                 ScaffoldMessenger.of(context).showSnackBar(
+590:                                     SnackBar(
+591:                                         content: Text(
+592:                                             'Prep time set to $val mins')));
+593:                               }
+594:                             },
+595:                           ),
+596:                         ),
+597:                       ],
+598:                     ),
+599:                   ),
+600:                   const SizedBox(height: 24),
+601:                   const Text('Menu Items',
+602:                       style:
+603:                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+604:                 ],
+605:               ),
+606:             ),
+607:           ),
+608:           itemsAsync.when(
+609:             data: (items) {
+610:               if (items.isEmpty) {
+611:                 return SliverToBoxAdapter(
+612:                     child: _buildEmptyState(
+613:                         Icons.restaurant_menu,
+614:                         'No Products Yet',
+615:                         'Add your first product to start selling!'));
+616:               }
+617:               return SliverPadding(
+618:                 padding: const EdgeInsets.symmetric(horizontal: 16),
+619:                 sliver: SliverList(
+620:                   delegate: SliverChildBuilderDelegate(
+621:                     (context, index) {
+622:                       final item = items[index];
+623:                       return Card(
+624:                         elevation: 2,
+625:                         shadowColor: Colors.black.withValues(alpha: 0.05),
+626:                         margin: const EdgeInsets.only(bottom: 12),
+627:                         shape: RoundedRectangleBorder(
+628:                             borderRadius: BorderRadius.circular(12)),
+629:                         child: Padding(
+630:                           padding: const EdgeInsets.symmetric(vertical: 8.0),
+631:                           child: ListTile(
+632:                             leading: ClipRRect(
+633:                               borderRadius: BorderRadius.circular(8),
+634:                               child: item.imageUrl.isNotEmpty
+635:                                   ? Image.network(
+636:                                       item.imageUrl,
+637:                                       width: 60,
+638:                                       height: 60,
+639:                                       fit: BoxFit.cover,
+640:                                       errorBuilder:
+641:                                           (context, error, stackTrace) =>
+642:                                               Container(
+643:                                                   width: 60,
+644:                                                   height: 60,
+645:                                                   color: Colors.red.shade50,
+646:                                                   child: const Icon(
+647:                                                       Icons.broken_image,
+648:                                                       color: Colors.red)),
+649:                                     )
+650:                                   : Container(
+651:                                       width: 60,
+652:                                       height: 60,
+653:                                       color: Colors.grey.shade100,
+654:                                       child: const Icon(Icons.fastfood,
+655:                                           color: Colors.grey)),
+656:                             ),
+657:                             title: Text(item.name,
+658:                                 style: const TextStyle(
+659:                                     fontWeight: FontWeight.bold, fontSize: 16)),
+660:                             subtitle: Padding(
+661:                               padding: const EdgeInsets.only(top: 4.0),
+662:                               child: Text('₹${item.price}',
+663:                                   style: const TextStyle(
+664:                                       color: Colors.green,
+665:                                       fontWeight: FontWeight.bold,
+666:                                       fontSize: 14)),
+667:                             ),
+668:                             trailing: Row(
+669:                               mainAxisSize: MainAxisSize.min,
+670:                               children: [
+671:                                 Switch(
+672:                                   value: item.isAvailable,
+673:                                   activeTrackColor: Colors.green.shade200,
+674:                                   activeThumbColor: Colors.green,
+675:                                   inactiveThumbColor: Colors.red.shade400,
+676:                                   inactiveTrackColor: Colors.red.shade100,
+677:                                   onChanged: (val) {
+678:                                     ref
+679:                                         .read(itemRepositoryProvider)
+680:                                         .updateItemStock(
+681:                                             _selectedShopId!, item.id, val);
+682:                                     ScaffoldMessenger.of(context).showSnackBar(
+683:                                         SnackBar(
+684:                                             content: Text(
+685:                                                 '${item.name} is now ${val ? "In Stock" : "Out of Stock"}')));
+686:                                   },
+687:                                 ),
+688:                                 PopupMenuButton<String>(
+689:                                   icon: const Icon(Icons.more_vert,
+690:                                       color: Colors.grey),
+691:                                   onSelected: (value) async {
+692:                                     if (value == 'edit') {
+693:                                       _showEditItemDialog(context, item);
+694:                                     } else if (value == 'schedule') {
+695:                                       _showOutOfStockScheduleDialog(
+696:                                           context, item);
+697:                                     } else if (value == 'delete') {
+698:                                       final confirm = await showDialog<bool>(
+699:                                         context: context,
+700:                                         builder: (ctx) => AlertDialog(
+701:                                           title: const Text('Delete Product?'),
+702:                                           content: Text(
+703:                                               'Are you sure you want to delete "${item.name}"?'),
+704:                                           actions: [
+705:                                             TextButton(
+706:                                                 onPressed: () =>
+707:                                                     Navigator.pop(ctx, false),
+708:                                                 child: const Text('Cancel')),
+709:                                             ElevatedButton(
+710:                                               style: ElevatedButton.styleFrom(
+711:                                                   backgroundColor: Colors.red,
+712:                                                   foregroundColor:
+713:                                                       Colors.white),
+714:                                               onPressed: () =>
+715:                                                   Navigator.pop(ctx, true),
+716:                                               child: const Text('Delete'),
+717:                                             ),
+718:                                           ],
+719:                                         ),
+720:                                       );
+721:                                       if (confirm == true) {
+722:                                         await ref
+723:                                             .read(itemRepositoryProvider)
+724:                                             .deleteItem(
+725:                                                 _selectedShopId!, item.id);
+726:                                         if (context.mounted) {
+727:                                           ScaffoldMessenger.of(context)
+728:                                               .showSnackBar(SnackBar(
+729:                                                   content: Text(
+730:                                                       '${item.name} deleted')));
+731:                                         }
+732:                                       }
+733:                                     }
+734:                                   },
+735:                                   itemBuilder: (context) => [
+736:                                     const PopupMenuItem(
+737:                                         value: 'edit',
+738:                                         child: Row(children: [
+739:                                           Icon(Icons.edit,
+740:                                               size: 18, color: Colors.blue),
+741:                                           SizedBox(width: 8),
+742:                                           Text('Edit')
+743:                                         ])),
+744:                                     const PopupMenuItem(
+745:                                         value: 'schedule',
+746:                                         child: Row(children: [
+747:                                           Icon(Icons.access_time,
+748:                                               size: 18, color: Colors.orange),
+749:                                           SizedBox(width: 8),
+750:                                           Text('Auto-Offline')
+751:                                         ])),
+752:                                     const PopupMenuItem(
+753:                                         value: 'delete',
+754:                                         child: Row(children: [
+755:                                           Icon(Icons.delete,
+756:                                               size: 18, color: Colors.red),
+757:                                           SizedBox(width: 8),
+758:                                           Text('Delete')
+759:                                         ])),
+760:                                   ],
+761:                                 ),
+762:                               ],
+763:                             ),
+764:                           ),
+765:                         ),
+766:                       );
+767:                     },
+768:                     childCount: items.length,
+769:                   ),
+770:                 ),
+771:               );
+772:             },
+773:             loading: () => const SliverToBoxAdapter(
+774:                 child: Center(child: CircularProgressIndicator())),
+775:             error: (e, s) => SliverToBoxAdapter(
+776:                 child: Center(child: Text('Error loading menu: $e'))),
+777:           ),
+778:         ],
+779:       ),
+780:     );
+781:   }
+782: 
+783:   void _showBusinessHoursDialog(BuildContext context, String currentHours) {
+784:     showDialog(
+785:       context: context,
+786:       builder: (ctx) {
+787:         String selected = currentHours;
+788:         return StatefulBuilder(
+789:           builder: (context, setState) {
+790:             return AlertDialog(
+791:               title: const Text('Edit Business Hours'),
+792:               content: Column(
+793:                 mainAxisSize: MainAxisSize.min,
+794:                 children: [
+795:                   RadioListTile<String>(
+796:                     title: const Text('Auto-Offline at 11:00 PM'),
+797:                     value: 'Auto-Offline at 11:00 PM',
+798:                     groupValue: selected,
+799:                     onChanged: (val) => setState(() => selected = val!),
+800:                   ),
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

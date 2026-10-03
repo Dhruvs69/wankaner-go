@@ -1,0 +1,808 @@
+Created At: 2026-09-28T16:18:44+05:30
+Completed At: 2026-09-28T16:18:45+05:30
+File Path: `file:///D:/speedtrack/wankaner_go/lib/features/auth/screens/vendor_home_screen.dart`
+Total Lines: 1790
+Total Bytes: 73337
+Showing lines 800 to 1599
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+800:                   ),
+801:                   RadioListTile<String>(
+802:                     title: const Text('Auto-Offline at 10:00 PM'),
+803:                     value: 'Auto-Offline at 10:00 PM',
+804:                     groupValue: selected,
+805:                     onChanged: (val) => setState(() => selected = val!),
+806:                   ),
+807:                   RadioListTile<String>(
+808:                     title: const Text('Always Online (24/7)'),
+809:                     value: 'Always Online (24/7)',
+810:                     groupValue: selected,
+811:                     onChanged: (val) => setState(() => selected = val!),
+812:                   ),
+813:                 ],
+814:               ),
+815:               actions: [
+816:                 TextButton(
+817:                   onPressed: () => Navigator.pop(ctx),
+818:                   child: const Text('Cancel'),
+819:                 ),
+820:                 ElevatedButton(
+821:                   onPressed: () {
+822:                     ref
+823:                         .read(vendorBusinessHoursProvider(_selectedShopId!)
+824:                             .notifier)
+825:                         .state = selected;
+826:                     Navigator.pop(ctx);
+827:                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+828:                         content: Text('Business hours updated successfully.')));
+829:                   },
+830:                   child: const Text('Save'),
+831:                 ),
+832:               ],
+833:             );
+834:           },
+835:         );
+836:       },
+837:     );
+838:   }
+839: 
+840:   void _showAddItemDialog(BuildContext context) {
+841:     showDialog(
+842:       context: context,
+843:       builder: (context) => _AddItemDialog(vendorId: _selectedShopId!),
+844:     );
+845:   }
+846: 
+847:   void _showEditItemDialog(BuildContext context, Item item) {
+848:     showDialog(
+849:       context: context,
+850:       builder: (context) =>
+851:           _EditItemDialog(vendorId: _selectedShopId!, item: item),
+852:     );
+853:   }
+854: 
+855:   void _showOutOfStockScheduleDialog(BuildContext context, Item item) {
+856:     showDialog(
+857:       context: context,
+858:       builder: (context) => AlertDialog(
+859:         title: const Text('Auto-Offline Schedule'),
+860:         content: Column(
+861:           mainAxisSize: MainAxisSize.min,
+862:           crossAxisAlignment: CrossAxisAlignment.start,
+863:           children: [
+864:             Text('Turn off "${item.name}" temporarily.',
+865:                 style: const TextStyle(color: Colors.grey)),
+866:             const SizedBox(height: 16),
+867:             ListTile(
+868:               leading: const Icon(Icons.timer, color: Colors.blue),
+869:               title: const Text('For 3 Hours'),
+870:               onTap: () {
+871:                 Navigator.pop(context);
+872:                 ref
+873:                     .read(itemRepositoryProvider)
+874:                     .updateItemStock(_selectedShopId!, item.id, false);
+875:                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+876:                     content: Text('${item.name} is offline for 3 hours')));
+877:               },
+878:             ),
+879:             ListTile(
+880:               leading: const Icon(Icons.nightlight_round, color: Colors.indigo),
+881:               title: const Text('Until Tomorrow'),
+882:               onTap: () {
+883:                 Navigator.pop(context);
+884:                 ref
+885:                     .read(itemRepositoryProvider)
+886:                     .updateItemStock(_selectedShopId!, item.id, false);
+887:                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+888:                     content: Text('${item.name} is offline until tomorrow')));
+889:               },
+890:             ),
+891:           ],
+892:         ),
+893:       ),
+894:     );
+895:   }
+896: 
+897:   Widget _buildEarnings(List orders) {
+898:     if (orders.isEmpty) {
+899:       return _buildEmptyState(Icons.account_balance_wallet, 'No Earnings Yet',
+900:           'Completed orders will show up here.');
+901:     }
+902: 
+903:     double totalRevenue = 0;
+904:     for (var o in orders) {
+905:       totalRevenue += o.totalAmount;
+906:     }
+907: 
+908:     return SingleChildScrollView(
+909:       padding: const EdgeInsets.all(16.0),
+910:       child: Column(
+911:         crossAxisAlignment: CrossAxisAlignment.start,
+912:         children: [
+913:           const Text('Financial & Analytics',
+914:               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+915:           const SizedBox(height: 16),
+916:           Container(
+917:             padding: const EdgeInsets.all(24.0),
+918:             decoration: BoxDecoration(
+919:               gradient: LinearGradient(
+920:                   colors: [Colors.green.shade400, Colors.green.shade700]),
+921:               borderRadius: BorderRadius.circular(16),
+922:               boxShadow: [
+923:                 BoxShadow(
+924:                     color: Colors.green.withValues(alpha: 0.3),
+925:                     blurRadius: 10,
+926:                     offset: const Offset(0, 5))
+927:               ],
+928:             ),
+929:             child: Row(
+930:               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+931:               children: [
+932:                 const Expanded(
+933:                   child: Column(
+934:                     crossAxisAlignment: CrossAxisAlignment.start,
+935:                     children: [
+936:                       Text('Total Revenue (Today)',
+937:                           style:
+938:                               TextStyle(color: Colors.white70, fontSize: 16)),
+939:                       SizedBox(height: 4),
+940:                       Text('+12% vs Yesterday',
+941:                           style: TextStyle(
+942:                               color: Colors.white,
+943:                               fontSize: 12,
+944:                               fontWeight: FontWeight.bold)),
+945:                     ],
+946:                   ),
+947:                 ),
+948:                 const SizedBox(width: 8),
+949:                 Flexible(
+950:                   child: FittedBox(
+951:                     fit: BoxFit.scaleDown,
+952:                     child: Text('₹${totalRevenue.toStringAsFixed(2)}',
+953:                         style: const TextStyle(
+954:                             fontSize: 32,
+955:                             fontWeight: FontWeight.bold,
+956:                             color: Colors.white)),
+957:                   ),
+958:                 ),
+959:               ],
+960:             ),
+961:           ),
+962:           const SizedBox(height: 24),
+963:           Row(
+964:             children: [
+965:               Expanded(
+966:                 child: Container(
+967:                   padding: const EdgeInsets.all(16),
+968:                   decoration: BoxDecoration(
+969:                       color: Colors.white,
+970:                       borderRadius: BorderRadius.circular(12),
+971:                       border: Border.all(color: Colors.grey.shade200)),
+972:                   child: Column(
+973:                     children: [
+974:                       const Icon(Icons.trending_up,
+975:                           color: Colors.blue, size: 32),
+976:                       const SizedBox(height: 8),
+977:                       const Text('Orders',
+978:                           style: TextStyle(color: Colors.grey)),
+979:                       Text('${orders.length}',
+980:                           style: const TextStyle(
+981:                               fontSize: 24, fontWeight: FontWeight.bold)),
+982:                     ],
+983:                   ),
+984:                 ),
+985:               ),
+986:               const SizedBox(width: 16),
+987:               Expanded(
+988:                 child: Container(
+989:                   padding: const EdgeInsets.all(16),
+990:                   decoration: BoxDecoration(
+991:                       color: Colors.white,
+992:                       borderRadius: BorderRadius.circular(12),
+993:                       border: Border.all(color: Colors.grey.shade200)),
+994:                   child: const Column(
+995:                     children: [
+996:                       Icon(Icons.favorite, color: Colors.red, size: 32),
+997:                       SizedBox(height: 8),
+998:                       Text('Retention', style: TextStyle(color: Colors.grey)),
+999:                       Text('85%',
+1000:                           style: TextStyle(
+1001:                               fontSize: 24, fontWeight: FontWeight.bold)),
+1002:                     ],
+1003:                   ),
+1004:                 ),
+1005:               ),
+1006:             ],
+1007:           ),
+1008:           const SizedBox(height: 32),
+1009:           const Text('Top Selling Items',
+1010:               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+1011:           const SizedBox(height: 12),
+1012:           // Mock top selling items based on orders
+1013:           Container(
+1014:             padding: const EdgeInsets.all(16),
+1015:             decoration: BoxDecoration(
+1016:                 color: Colors.white,
+1017:                 borderRadius: BorderRadius.circular(12),
+1018:                 border: Border.all(color: Colors.grey.shade200)),
+1019:             child: Column(
+1020:               children: [
+1021:                 _buildTopSellingRow('1. Margerita Pizza', '12 Orders'),
+1022:                 const Divider(),
+1023:                 _buildTopSellingRow('2. Garlic Bread', '8 Orders'),
+1024:                 const Divider(),
+1025:                 _buildTopSellingRow('3. Coca Cola (500ml)', '5 Orders'),
+1026:               ],
+1027:             ),
+1028:           ),
+1029:           const SizedBox(height: 32),
+1030:           Text('Recent Orders (${orders.length})',
+1031:               style:
+1032:                   const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+1033:           const SizedBox(height: 12),
+1034:           ListView.separated(
+1035:             shrinkWrap: true,
+1036:             physics: const NeverScrollableScrollPhysics(),
+1037:             itemCount: orders.length > 5 ? 5 : orders.length, // Show max 5
+1038:             separatorBuilder: (context, index) => const Divider(),
+1039:             itemBuilder: (context, index) {
+1040:               final order = orders[index];
+1041:               return ListTile(
+1042:                 contentPadding: EdgeInsets.zero,
+1043:                 leading: CircleAvatar(
+1044:                   backgroundColor: Colors.green.shade50,
+1045:                   child: const Icon(Icons.check, color: Colors.green),
+1046:                 ),
+1047:                 title: Text(
+1048:                     'Order #${order.id.length > 8 ? order.id.substring(0, 8) : order.id}',
+1049:                     style: const TextStyle(fontWeight: FontWeight.bold)),
+1050:                 subtitle: Text(
+1051:                     '${order.items.length} items • ${order.createdAt.hour}:${order.createdAt.minute.toString().padLeft(2, '0')}'),
+1052:                 trailing: Text('₹${order.totalAmount}',
+1053:                     style: const TextStyle(
+1054:                         fontWeight: FontWeight.bold,
+1055:                         fontSize: 16,
+1056:                         color: Colors.green)),
+1057:               );
+1058:             },
+1059:           ),
+1060:         ],
+1061:       ),
+1062:     );
+1063:   }
+1064: 
+1065:   Widget _buildTopSellingRow(String name, String orders) {
+1066:     return Padding(
+1067:       padding: const EdgeInsets.symmetric(vertical: 4.0),
+1068:       child: Row(
+1069:         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+1070:         children: [
+1071:           Text(name, style: const TextStyle(fontWeight: FontWeight.w500)),
+1072:           Text(orders,
+1073:               style: const TextStyle(
+1074:                   color: Colors.deepOrange, fontWeight: FontWeight.bold)),
+1075:         ],
+1076:       ),
+1077:     );
+1078:   }
+1079: }
+1080: 
+1081: class _AddItemDialog extends ConsumerStatefulWidget {
+1082:   final String vendorId;
+1083:   const _AddItemDialog({required this.vendorId});
+1084: 
+1085:   @override
+1086:   ConsumerState<_AddItemDialog> createState() => _AddItemDialogState();
+1087: }
+1088: 
+1089: class _AddItemDialogState extends ConsumerState<_AddItemDialog> {
+1090:   final nameController = TextEditingController();
+1091:   final priceController = TextEditingController();
+1092:   final imageUrlController = TextEditingController();
+1093: 
+1094:   final List<Map<String, TextEditingController>> _variants = [];
+1095:   final List<Map<String, TextEditingController>> _addons = [];
+1096: 
+1097:   bool _isUploading = false;
+1098:   String? _uploadedImageUrl;
+1099: 
+1100:   @override
+1101:   void dispose() {
+1102:     nameController.dispose();
+1103:     priceController.dispose();
+1104:     imageUrlController.dispose();
+1105:     for (var v in _variants) {
+1106:       v['name']!.dispose();
+1107:       v['price']!.dispose();
+1108:     }
+1109:     for (var a in _addons) {
+1110:       a['name']!.dispose();
+1111:       a['price']!.dispose();
+1112:     }
+1113:     super.dispose();
+1114:   }
+1115: 
+1116:   void _addVariant() {
+1117:     setState(() {
+1118:       _variants.add({
+1119:         'name': TextEditingController(),
+1120:         'price': TextEditingController(),
+1121:       });
+1122:     });
+1123:   }
+1124: 
+1125:   void _addAddon() {
+1126:     setState(() {
+1127:       _addons.add({
+1128:         'name': TextEditingController(),
+1129:         'price': TextEditingController(),
+1130:       });
+1131:     });
+1132:   }
+1133: 
+1134:   Future<void> _pickAndUploadImage() async {
+1135:     try {
+1136:       final picker = ImagePicker();
+1137:       final pickedFile = await picker.pickImage(
+1138:         source: ImageSource.gallery,
+1139:       );
+1140: 
+1141:       if (pickedFile != null) {
+1142:         setState(() {
+1143:           _isUploading = true;
+1144:         });
+1145: 
+1146:         final bytes = await pickedFile.readAsBytes();
+1147:         final rawName =
+1148:             pickedFile.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+1149: 
+1150:         final downloadUrl = await ApiService.uploadImage(bytes, rawName);
+1151: 
+1152:         if (downloadUrl != null) {
+1153:           setState(() {
+1154:             _uploadedImageUrl = downloadUrl;
+1155:             imageUrlController.text = downloadUrl;
+1156:             _isUploading = false;
+1157:           });
+1158: 
+1159:           if (mounted) {
+1160:             ScaffoldMessenger.of(context).showSnackBar(
+1161:                 const SnackBar(content: Text('Image uploaded successfully!')));
+1162:           }
+1163:         } else {
+1164:           throw Exception('Failed to upload image');
+1165:         }
+1166:       }
+1167:     } catch (e) {
+1168:       setState(() {
+1169:         _isUploading = false;
+1170:       });
+1171:       if (mounted) {
+1172:         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+1173:           content: Text(
+1174:               'Upload notice: $e. You can also paste an Image URL directly.'),
+1175:           duration: const Duration(seconds: 4),
+1176:         ));
+1177:       }
+1178:     }
+1179:   }
+1180: 
+1181:   Widget _buildListSection(
+1182:       String title, List<Map<String, TextEditingController>> list, VoidCallback onAdd) {
+1183:     return Column(
+1184:       crossAxisAlignment: CrossAxisAlignment.start,
+1185:       children: [
+1186:         Row(
+1187:           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+1188:           children: [
+1189:             Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold))),
+1190:             TextButton.icon(
+1191:               icon: const Icon(Icons.add, size: 18),
+1192:               label: const Text('Add'),
+1193:               onPressed: onAdd,
+1194:             )
+1195:           ],
+1196:         ),
+1197:         for (int i = 0; i < list.length; i++)
+1198:           Padding(
+1199:             padding: const EdgeInsets.only(bottom: 8.0),
+1200:             child: Row(
+1201:               children: [
+1202:                 Expanded(
+1203:                   flex: 2,
+1204:                   child: TextField(
+1205:                     controller: list[i]['name'],
+1206:                     decoration: const InputDecoration(
+1207:                         labelText: 'Name', isDense: true),
+1208:                   ),
+1209:                 ),
+1210:                 const SizedBox(width: 8),
+1211:                 Expanded(
+1212:                   flex: 1,
+1213:                   child: TextField(
+1214:                     controller: list[i]['price'],
+1215:                     decoration: const InputDecoration(
+1216:                         labelText: 'Price', isDense: true),
+1217:                     keyboardType: TextInputType.number,
+1218:                   ),
+1219:                 ),
+1220:                 IconButton(
+1221:                   icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+1222:                   onPressed: () {
+1223:                     setState(() {
+1224:                       list[i]['name']!.dispose();
+1225:                       list[i]['price']!.dispose();
+1226:                       list.removeAt(i);
+1227:                     });
+1228:                   },
+1229:                 )
+1230:               ],
+1231:             ),
+1232:           )
+1233:       ],
+1234:     );
+1235:   }
+1236: 
+1237:   @override
+1238:   Widget build(BuildContext context) {
+1239:     final previewUrl = imageUrlController.text.trim().isNotEmpty
+1240:         ? imageUrlController.text.trim()
+1241:         : _uploadedImageUrl;
+1242: 
+1243:     return AlertDialog(
+1244:       title: const Text('Add New Product'),
+1245:       content: SizedBox(
+1246:         width: 400,
+1247:         child: SingleChildScrollView(
+1248:           child: Column(
+1249:             mainAxisSize: MainAxisSize.min,
+1250:             crossAxisAlignment: CrossAxisAlignment.stretch,
+1251:             children: [
+1252:               TextField(
+1253:                 controller: nameController,
+1254:                 decoration: const InputDecoration(
+1255:                     labelText: 'Product Name (e.g. Paneer Tikka)'),
+1256:               ),
+1257:               TextField(
+1258:                 controller: priceController,
+1259:                 decoration: const InputDecoration(labelText: 'Base Price (₹)'),
+1260:                 keyboardType: TextInputType.number,
+1261:               ),
+1262:               const SizedBox(height: 16),
+1263:               TextField(
+1264:                 controller: imageUrlController,
+1265:                 decoration: const InputDecoration(
+1266:                   labelText: 'Product Image URL',
+1267:                   hintText: 'Upload image or paste direct image URL',
+1268:                   prefixIcon: Icon(Icons.link),
+1269:                 ),
+1270:                 onChanged: (_) => setState(() {}),
+1271:               ),
+1272:               const SizedBox(height: 12),
+1273:               ElevatedButton.icon(
+1274:                 icon: _isUploading
+1275:                     ? const SizedBox(
+1276:                         width: 16,
+1277:                         height: 16,
+1278:                         child: CircularProgressIndicator(
+1279:                             color: Colors.white, strokeWidth: 2))
+1280:                     : const Icon(Icons.upload_file),
+1281:                 label: Text(_isUploading
+1282:                     ? 'Uploading Image...'
+1283:                     : 'Pick & Upload Image From Device'),
+1284:                 onPressed: _isUploading ? null : _pickAndUploadImage,
+1285:               ),
+1286:               if (previewUrl != null && previewUrl.isNotEmpty) ...[
+1287:                 const SizedBox(height: 12),
+1288:                 Stack(
+1289:                   children: [
+1290:                     ClipRRect(
+1291:                       borderRadius: BorderRadius.circular(8),
+1292:                       child: Image.network(
+1293:                         previewUrl,
+1294:                         height: 120,
+1295:                         width: double.infinity,
+1296:                         fit: BoxFit.cover,
+1297:                         errorBuilder: (context, error, stackTrace) => Container(
+1298:                           height: 80,
+1299:                           color: Colors.grey.shade200,
+1300:                           alignment: Alignment.center,
+1301:                           child: const Text(
+1302:                               'Invalid image URL or preview unavailable',
+1303:                               style: TextStyle(color: Colors.grey, fontSize: 12)),
+1304:                         ),
+1305:                       ),
+1306:                     ),
+1307:                     Positioned(
+1308:                       top: 4,
+1309:                       right: 4,
+1310:                       child: CircleAvatar(
+1311:                         backgroundColor: Colors.black.withValues(alpha: 0.6),
+1312:                         radius: 14,
+1313:                         child: IconButton(
+1314:                           padding: EdgeInsets.zero,
+1315:                           icon: const Icon(Icons.close, color: Colors.white, size: 16),
+1316:                           onPressed: () {
+1317:                             setState(() {
+1318:                               imageUrlController.clear();
+1319:                               _uploadedImageUrl = null;
+1320:                             });
+1321:                           },
+1322:                         ),
+1323:                       ),
+1324:                     ),
+1325:                   ],
+1326:                 ),
+1327:               ],
+1328:               const SizedBox(height: 16),
+1329:               const Divider(),
+1330:               _buildListSection('Variants (e.g. Small / Large)', _variants, _addVariant),
+1331:               const Divider(),
+1332:               _buildListSection('Add-ons (e.g. Extra Cheese)', _addons, _addAddon),
+1333:             ],
+1334:           ),
+1335:         ),
+1336:       ),
+1337:       actions: [
+1338:         TextButton(
+1339:           onPressed: () => Navigator.pop(context),
+1340:           child: const Text('Cancel'),
+1341:         ),
+1342:         ElevatedButton(
+1343:           onPressed: _isUploading
+1344:               ? null
+1345:               : () async {
+1346:                   if (nameController.text.isNotEmpty &&
+1347:                       priceController.text.isNotEmpty) {
+1348:                     final finalImageUrl =
+1349:                         imageUrlController.text.trim().isNotEmpty
+1350:                             ? imageUrlController.text.trim()
+1351:                             : (_uploadedImageUrl ?? '');
+1352: 
+1353:                     List<ItemVariant> variantsList = _variants.map((v) => ItemVariant(
+1354:                           name: v['name']!.text.trim(),
+1355:                           price: double.tryParse(v['price']!.text) ?? 0.0,
+1356:                         )).where((v) => v.name.isNotEmpty).toList();
+1357: 
+1358:                     List<ItemAddon> addonsList = _addons.map((a) => ItemAddon(
+1359:                           name: a['name']!.text.trim(),
+1360:                           price: double.tryParse(a['price']!.text) ?? 0.0,
+1361:                         )).where((a) => a.name.isNotEmpty).toList();
+1362: 
+1363:                     final newItem = Item(
+1364:                       id: '', // Generated by Firestore/Backend
+1365:                       name: nameController.text.trim(),
+1366:                       price: double.tryParse(priceController.text) ?? 0.0,
+1367:                       imageUrl: finalImageUrl,
+1368:                       isAvailable: true,
+1369:                       variants: variantsList,
+1370:                       addons: addonsList,
+1371:                     );
+1372: 
+1373:                     await ref
+1374:                         .read(itemRepositoryProvider)
+1375:                         .addItem(widget.vendorId, newItem);
+1376: 
+1377:                     if (context.mounted) {
+1378:                       Navigator.pop(context);
+1379:                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+1380:                           content: Text('Product Added Successfully!')));
+1381:                     }
+1382:                   } else {
+1383:                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+1384:                         content: Text('Please fill all required fields')));
+1385:                   }
+1386:                 },
+1387:           child: const Text('Save Product'),
+1388:         ),
+1389:       ],
+1390:     );
+1391:   }
+1392: }
+1393: 
+1394: class _EditItemDialog extends ConsumerStatefulWidget {
+1395:   final String vendorId;
+1396:   final Item item;
+1397:   const _EditItemDialog({required this.vendorId, required this.item});
+1398: 
+1399:   @override
+1400:   ConsumerState<_EditItemDialog> createState() => _EditItemDialogState();
+1401: }
+1402: 
+1403: class _EditItemDialogState extends ConsumerState<_EditItemDialog> {
+1404:   late final TextEditingController nameController;
+1405:   late final TextEditingController priceController;
+1406:   late final TextEditingController imageUrlController;
+1407:   
+1408:   final List<Map<String, TextEditingController>> _variants = [];
+1409:   final List<Map<String, TextEditingController>> _addons = [];
+1410: 
+1411:   bool _isUploading = false;
+1412: 
+1413:   @override
+1414:   void initState() {
+1415:     super.initState();
+1416:     nameController = TextEditingController(text: widget.item.name);
+1417:     priceController = TextEditingController(text: widget.item.price.toString());
+1418:     imageUrlController = TextEditingController(text: widget.item.imageUrl);
+1419:     
+1420:     for (var v in widget.item.variants) {
+1421:       _variants.add({
+1422:         'name': TextEditingController(text: v.name),
+1423:         'price': TextEditingController(text: v.price.toString()),
+1424:       });
+1425:     }
+1426:     for (var a in widget.item.addons) {
+1427:       _addons.add({
+1428:         'name': TextEditingController(text: a.name),
+1429:         'price': TextEditingController(text: a.price.toString()),
+1430:       });
+1431:     }
+1432:   }
+1433: 
+1434:   @override
+1435:   void dispose() {
+1436:     nameController.dispose();
+1437:     priceController.dispose();
+1438:     imageUrlController.dispose();
+1439:     for (var v in _variants) {
+1440:       v['name']!.dispose();
+1441:       v['price']!.dispose();
+1442:     }
+1443:     for (var a in _addons) {
+1444:       a['name']!.dispose();
+1445:       a['price']!.dispose();
+1446:     }
+1447:     super.dispose();
+1448:   }
+1449: 
+1450:   void _addVariant() {
+1451:     setState(() {
+1452:       _variants.add({
+1453:         'name': TextEditingController(),
+1454:         'price': TextEditingController(),
+1455:       });
+1456:     });
+1457:   }
+1458: 
+1459:   void _addAddon() {
+1460:     setState(() {
+1461:       _addons.add({
+1462:         'name': TextEditingController(),
+1463:         'price': TextEditingController(),
+1464:       });
+1465:     });
+1466:   }
+1467: 
+1468:   Future<void> _pickAndUploadImage() async {
+1469:     try {
+1470:       final picker = ImagePicker();
+1471:       final pickedFile = await picker.pickImage(
+1472:         source: ImageSource.gallery,
+1473:       );
+1474: 
+1475:       if (pickedFile != null) {
+1476:         setState(() {
+1477:           _isUploading = true;
+1478:         });
+1479: 
+1480:         final bytes = await pickedFile.readAsBytes();
+1481:         final rawName =
+1482:             pickedFile.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+1483: 
+1484:         final downloadUrl = await ApiService.uploadImage(bytes, rawName);
+1485: 
+1486:         if (downloadUrl != null) {
+1487:           setState(() {
+1488:             imageUrlController.text = downloadUrl;
+1489:             _isUploading = false;
+1490:           });
+1491: 
+1492:           if (mounted) {
+1493:             ScaffoldMessenger.of(context).showSnackBar(
+1494:                 const SnackBar(content: Text('Image uploaded successfully!')));
+1495:           }
+1496:         } else {
+1497:           throw Exception('Failed to upload image');
+1498:         }
+1499:       }
+1500:     } catch (e) {
+1501:       setState(() {
+1502:         _isUploading = false;
+1503:       });
+1504:       if (mounted) {
+1505:         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+1506:           content: Text(
+1507:               'Upload notice: $e. You can also paste an Image URL directly.'),
+1508:           duration: const Duration(seconds: 4),
+1509:         ));
+1510:       }
+1511:     }
+1512:   }
+1513: 
+1514:   Widget _buildListSection(
+1515:       String title, List<Map<String, TextEditingController>> list, VoidCallback onAdd) {
+1516:     return Column(
+1517:       crossAxisAlignment: CrossAxisAlignment.start,
+1518:       children: [
+1519:         Row(
+1520:           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+1521:           children: [
+1522:             Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold))),
+1523:             TextButton.icon(
+1524:               icon: const Icon(Icons.add, size: 18),
+1525:               label: const Text('Add'),
+1526:               onPressed: onAdd,
+1527:             )
+1528:           ],
+1529:         ),
+1530:         for (int i = 0; i < list.length; i++)
+1531:           Padding(
+1532:             padding: const EdgeInsets.only(bottom: 8.0),
+1533:             child: Row(
+1534:               children: [
+1535:                 Expanded(
+1536:                   flex: 2,
+1537:                   child: TextField(
+1538:                     controller: list[i]['name'],
+1539:                     decoration: const InputDecoration(
+1540:                         labelText: 'Name', isDense: true),
+1541:                   ),
+1542:                 ),
+1543:                 const SizedBox(width: 8),
+1544:                 Expanded(
+1545:                   flex: 1,
+1546:                   child: TextField(
+1547:                     controller: list[i]['price'],
+1548:                     decoration: const InputDecoration(
+1549:                         labelText: 'Price', isDense: true),
+1550:                     keyboardType: TextInputType.number,
+1551:                   ),
+1552:                 ),
+1553:                 IconButton(
+1554:                   icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+1555:                   onPressed: () {
+1556:                     setState(() {
+1557:                       list[i]['name']!.dispose();
+1558:                       list[i]['price']!.dispose();
+1559:                       list.removeAt(i);
+1560:                     });
+1561:                   },
+1562:                 )
+1563:               ],
+1564:             ),
+1565:           )
+1566:       ],
+1567:     );
+1568:   }
+1569: 
+1570:   @override
+1571:   Widget build(BuildContext context) {
+1572:     final previewUrl = imageUrlController.text.trim();
+1573: 
+1574:     return AlertDialog(
+1575:       title: Text('Edit ${widget.item.name}'),
+1576:       content: SizedBox(
+1577:         width: 400,
+1578:         child: SingleChildScrollView(
+1579:           child: Column(
+1580:             mainAxisSize: MainAxisSize.min,
+1581:             crossAxisAlignment: CrossAxisAlignment.stretch,
+1582:             children: [
+1583:               TextField(
+1584:                 controller: nameController,
+1585:                 decoration: const InputDecoration(labelText: 'Product Name'),
+1586:               ),
+1587:               TextField(
+1588:                 controller: priceController,
+1589:                 decoration: const InputDecoration(labelText: 'Base Price (₹)'),
+1590:                 keyboardType: TextInputType.number,
+1591:               ),
+1592:               const SizedBox(height: 16),
+1593:               TextField(
+1594:                 controller: imageUrlController,
+1595:                 decoration: const InputDecoration(
+1596:                   labelText: 'Product Image URL',
+1597:                   hintText: 'Upload or paste image URL',
+1598:                   prefixIcon: Icon(Icons.link),
+1599:                 ),
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

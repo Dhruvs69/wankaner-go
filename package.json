@@ -1,0 +1,10 @@
+{
+  "name": "wankaner_go_root",
+  "version": "1.0.0",
+  "description": "Root package to proxy commands to backend",
+  "scripts": {
+    "dev": "cd backend && npm run dev",
+    "start": "cd backend && npm start",
+    "install-backend": "cd backend && npm install"
+  }
+}

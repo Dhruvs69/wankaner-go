@@ -1,0 +1,50 @@
+1051:                 shrinkWrap: true,
+1052:                 physics: const NeverScrollableScrollPhysics(),
+1053:                 itemCount: payouts.length,
+1054:                 separatorBuilder: (context, index) => const Divider(),
+1055:                 itemBuilder: (context, index) {
+1056:                   final p = payouts[index];
+1057:                   return ListTile(
+1058:                     leading: const Icon(Icons.money, color: Colors.green),
+1059:                     title: Text('Payout #${p['id']}'),
+1060:                     subtitle: Text('Status: ${p['status']} • Date: ${p['created_at']}'),
+1061:                     trailing: Text('₹${p['amount']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+1062:                   );
+1063:                 },
+1064:               );
+1065:             },
+1066:           ),
+1067:         ],
+1068:       ),
+1069:     );
+1070:   }
+1071: 
+1072:   Widget _buildListSection(
+1073:       String title, List<Map<String, TextEditingController>> list, VoidCallback onAdd) {
+1074:     return Column(
+1075:       crossAxisAlignment: CrossAxisAlignment.start,
+1076:       children: [
+1077:         Row(
+1078:           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+1079:           children: [
+1080:             Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold))),
+1081:             TextButton.icon(
+1082:               icon: const Icon(Icons.add, size: 18),
+1083:               label: const Text('Add'),
+1084:               onPressed: onAdd,
+1085:             )
+1086:           ],
+1087:         ),
+1088:         for (int i = 0; i < list.length; i++)
+1089:           Padding(
+1090:             padding: const EdgeInsets.only(bottom: 8.0),
+1091:             child: Row(
+1092:               children: [
+1093:                 Expanded(
+1094:                   flex: 2,
+1095:                   child: TextField(
+1096:                     controller: list[i]['name'],
+1097:                     decoration: const InputDecoration(
+1098:                         labelText: 'Name', isDense: true),
+1099:                   ),
+1100:                 ),

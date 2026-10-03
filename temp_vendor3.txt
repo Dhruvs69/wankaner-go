@@ -1,0 +1,80 @@
+1216:                 label: Text(_isUploading
+1217:                     ? 'Uploading Image...'
+1218:                     : 'Pick & Upload Image From Device'),
+1219:                 onPressed: _isUploading ? null : _pickAndUploadImage,
+1220:               ),
+1221:               if (previewUrl != null && previewUrl.isNotEmpty) ...[
+1222:                 const SizedBox(height: 12),
+1223:                 Stack(
+1224:                   children: [
+1225:                     ClipRRect(
+1226:                       borderRadius: BorderRadius.circular(8),
+1227:                       child: Image.network(
+1228:                         previewUrl,
+1229:                         height: 120,
+1230:                         width: double.infinity,
+1231:                         fit: BoxFit.cover,
+1232:                         errorBuilder: (context, error, stackTrace) => Container(
+1233:                           height: 80,
+1234:                           color: Colors.grey.shade200,
+1235:                           alignment: Alignment.center,
+1236:                           child: const Text(
+1237:                               'Invalid image URL or preview unavailable',
+1238:                               style: TextStyle(color: Colors.grey, fontSize: 12)),
+1239:                         ),
+1240:                       ),
+1241:                     ),
+1242:                     Positioned(
+1243:                       top: 4,
+1244:                       right: 4,
+1245:                       child: CircleAvatar(
+1246:                         backgroundColor: Colors.black.withValues(alpha: 0.6),
+1247:                         radius: 14,
+1248:                         child: IconButton(
+1249:                           padding: EdgeInsets.zero,
+1250:                           icon: const Icon(Icons.close, color: Colors.white, size: 16),
+1251:                           onPressed: () {
+1252:                             setState(() {
+1253:                               imageUrlController.clear();
+1254:                               _uploadedImageUrl = null;
+1255:                             });
+1256:                           },
+1257:                         ),
+1258:                       ),
+1259:                     ),
+1260:                   ],
+1261:                 ),
+1262:               ],
+1263:               const SizedBox(height: 16),
+1264:               const Divider(),
+1265:               _buildListSection('Variants (e.g. Small / Large)', _variants, _addVariant),
+1266:               const Divider(),
+1267:               _buildListSection('Add-ons (e.g. Extra Cheese)', _addons, _addAddon),
+1268:             ],
+1269:           ),
+1270:         ),
+1271:       ),
+1272:       actions: [
+1273:         TextButton(
+1274:           onPressed: () => Navigator.pop(context),
+1275:           child: const Text('Cancel'),
+1276:         ),
+1277:         ElevatedButton(
+1278:           onPressed: _isUploading
+1279:               ? null
+1280:               : () async {
+1281:                   if (nameController.text.isNotEmpty &&
+1282:                       priceController.text.isNotEmpty) {
+1283:                     final finalImageUrl =
+1284:                         imageUrlController.text.trim().isNotEmpty
+1285:                             ? imageUrlController.text.trim()
+1286:                             : (_uploadedImageUrl ?? '');
+1287: 
+1288:                     List<ItemVariant> variantsList = _variants.map((v) => ItemVariant(
+1289:                           name: v['name']!.text.trim(),
+1290:                           price: double.tryParse(v['price']!.text) ?? 0.0,
+1291:                         )).where((v) => v.name.isNotEmpty).toList();
+1292: 
+1293:                     List<ItemAddon> addonsList = _addons.map((a) => ItemAddon(
+1294:                           name: a['name']!.text.trim(),
+1295:                           price: double.tryParse(a['price']!.text) ?? 0.0,
