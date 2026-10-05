@@ -39,21 +39,25 @@ async function sendOrderPushNotification(orderId, newStatus) {
                 data: { title, message, order_id: orderId }
             };
 
-            await getMessaging().send({
-                token: rows[0].fcm_token,
-                notification: payload.notification,
-                data: payload.data,
-                android: {
-                    priority: 'high',
-                    notification: {
-                        channelId: 'wankaner_go_channel_id',
-                        sound: 'default',
-                        defaultSound: true,
-                        defaultVibrateTimings: true,
-                        clickAction: 'FLUTTER_NOTIFICATION_CLICK'
+            try {
+                await getMessaging().send({
+                    token: rows[0].fcm_token,
+                    notification: payload.notification,
+                    data: payload.data,
+                    android: {
+                        priority: 'high',
+                        notification: {
+                            channelId: 'wankaner_go_channel_id',
+                            sound: 'default',
+                            defaultSound: true,
+                            defaultVibrateTimings: true,
+                            clickAction: 'FLUTTER_NOTIFICATION_CLICK'
+                        }
                     }
-                }
-            });
+                });
+            } catch (fcmErr) {
+                console.log('FCM Error (ignored):', fcmErr.message);
+            }
             console.log('Sent push notification to customer for order', orderId);
         }
     } catch (err) {
