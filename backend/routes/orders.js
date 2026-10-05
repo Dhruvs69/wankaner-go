@@ -162,7 +162,7 @@ router.put('/:id', async (req, res) => {
         if (proof_image_url) {
             await db.query('UPDATE orders SET status = ?, proof_image_url = ? WHERE id = ?', [status || 'delivered', proof_image_url, req.params.id]);
         } else if (deliveryPartnerId) {
-            await db.query('UPDATE orders SET delivery_partner_id = ?, status = ? WHERE id = ?', [deliveryPartnerId, status || 'out for delivery', req.params.id]);
+            await db.query('UPDATE orders SET delivery_partner_id = ?, status = COALESCE(?, status) WHERE id = ?', [deliveryPartnerId, status || null, req.params.id]);
         } else if (status) {
             await db.query('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id]);
         }

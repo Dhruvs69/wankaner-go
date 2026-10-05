@@ -511,7 +511,7 @@ class _VendorHomeScreenState extends ConsumerState<VendorHomeScreen> {
                   ),
                 if (currentStatus == 'ready' ||
                     currentStatus == 'out for delivery' ||
-                    currentStatus == 'picked up')
+                    currentStatus == 'out for delivery')
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -521,7 +521,7 @@ class _VendorHomeScreenState extends ConsumerState<VendorHomeScreen> {
                         border: Border.all(color: Colors.green.shade200)),
                     child: Center(
                       child: Text(
-                          currentStatus == 'picked up'
+                          currentStatus == 'out for delivery'
                               ? 'Order Picked Up by Driver'
                               : 'Waiting for Delivery Partner...',
                           style: const TextStyle(

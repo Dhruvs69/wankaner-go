@@ -255,7 +255,7 @@ class _DeliveryHomeScreenState extends ConsumerState<DeliveryHomeScreen> {
       itemCount: orders.length,
       itemBuilder: (context, index) {
         final order = orders[index];
-        final isPickedUp = order.status == 'picked up' ||
+        final isPickedUp = order.status == 'out for delivery' ||
             _optimisticPickedUp.contains(order.id);
 
         if (_optimisticDelivered.contains(order.id)) {
@@ -534,7 +534,7 @@ class _DeliveryHomeScreenState extends ConsumerState<DeliveryHomeScreen> {
                               try {
                                 await ref
                                     .read(orderRepositoryProvider)
-                                    .updateOrderStatus(order.id, 'picked up');
+                                    .updateOrderStatus(order.id, 'out for delivery');
                                 ref.invalidate(
                                 deliveryOrdersProvider(ref.read(authStateProvider).value ?? ''));
 
