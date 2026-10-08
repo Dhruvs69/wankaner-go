@@ -82,7 +82,7 @@ router.post('/', async (req, res) => {
     const id = 'WK-' + crypto.randomBytes(3).toString('hex').toUpperCase();
     const otp = Math.floor(1000 + Math.random() * 9000).toString(); // 4 digit OTP
     const commission = total_amount * 0.15; // 15% platform fee
-    const delivery_fee = 40.0; // Base delivery fee
+    const delivery_fee = req.body.delivery_fee !== undefined ? req.body.delivery_fee : 40.0; // Dynamic delivery fee
 
     try {
         await db.query(

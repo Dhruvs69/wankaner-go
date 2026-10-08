@@ -84,3 +84,41 @@ router.delete('/:id/addresses/:addressId', async (req, res) => {
 
 module.exports = router;
 
+
+// Submit a review for a user (delivery partner)
+router.post('/:id/reviews', async (req, res) => {
+    const { rating, comment, customer_id, order_id } = req.body;
+    const deliveryPartnerId = req.params.id;
+    const { v4: uuidv4 } = require('uuid');
+    const id = uuidv4();
+    
+    try {
+        await db.query('START TRANSACTION');
+        
+        // Insert review
+        await db.query(
+            'INSERT INTO reviews (id, delivery_partner_id, customer_id, order_id, rating, comment) VALUES (?, ?, ?, ?, ?, ?)',
+            [id, deliveryPartnerId, customer_id || 'anonymous', order_id || 'unknown', rating, comment]
+        );
+
+        // Update user rating
+        const [rows] = await db.query('SELECT review_count, total_rating_score FROM users WHERE id = ? FOR UPDATE', [deliveryPartnerId]);
+        if (rows.length > 0) {
+            let { review_count, total_rating_score } = rows[0];
+            review_count = (review_count || 0) + 1;
+            total_rating_score = (total_rating_score || 0) + rating;
+            const new_rating = total_rating_score / review_count;
+
+            await db.query(
+                'UPDATE users SET review_count = ?, total_rating_score = ?, rating = ? WHERE id = ?',
+                [review_count, total_rating_score, new_rating, deliveryPartnerId]
+            );
+        }
+
+        await db.query('COMMIT');
+        res.status(201).json({ id, message: 'Review submitted successfully' });
+    } catch (err) {
+        await db.query('ROLLBACK');
+        res.status(500).json({ error: err.message });
+    }
+});
