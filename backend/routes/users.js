@@ -7,7 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 router.get('/', async (req, res) => {
     const role = req.query.role;
     try {
-        let query = 'SELECT id, name, email, phone, role, created_at, current_lat, current_lng, is_online, wallet_balance FROM users';
+        let query = 'SELECT id, name, email, phone, role, created_at, current_lat, current_lng, is_online, wallet_balance, rating, review_count FROM users';
         let params = [];
         if (role) {
             query += ' WHERE role = ?';
@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT id, name, email, phone, role, created_at, current_lat, current_lng, is_online, wallet_balance FROM users WHERE id = ?', [req.params.id]);
+        const [rows] = await pool.query('SELECT id, name, email, phone, role, created_at, current_lat, current_lng, is_online, wallet_balance, rating, review_count FROM users WHERE id = ?', [req.params.id]);
         if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
         
         const user = rows[0];
